@@ -327,7 +327,7 @@
 <body>
 
 <header>
-  <a href="#" class="logo">Arcade<span>Zone</span></a>
+  <a href="#" class="logo">ReggiezGames</a>
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Search games..." autocomplete="off">
@@ -423,7 +423,7 @@
 </div>
 
 <footer>
-  <p>🎮 <strong>ArcadeZone</strong> — Free Unblocked Games. No login required. <a href="#">Privacy</a> · <a href="#">About</a></p>
+  <p>🎮 <strong>ReggiezGames</strong> — Free Unblocked Games. No login required. <a href="#">Privacy</a> · <a href="#">About</a></p>
 </footer>
 
 <script>
@@ -530,18 +530,52 @@ function openGame(id) {
       <h3>${g.title}</h3>
       <p>${g.desc}</p>
       <button class="play-btn" onclick="launchFrame('${g.id}')">▶ Launch Game</button>
-      <p style="margin-top:12px;font-size:11px;color:var(--muted)">Opens in a new tab if blocked by your browser.</p>
+      <p style="margin-top:12px;font-size:11px;color:var(--muted)">Game opens in a new tab if blocked by your browser.</p>
     </div>
   `;
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
+/**
+ * Launch the game inside an iframe if possible. 
+ * If iframe embedding fails (load error or blocked), open in a new tab.
+ */
 function launchFrame(id) {
   const g = games.find(x => x.id === id);
   if (!g) return;
   const wrap = document.getElementById('gameFrameWrap');
-  wrap.innerHTML = `<iframe src="${g.url}" allowfullscreen></iframe>`;
+  // Remove existing iframe/placeholders
+  wrap.innerHTML = '';
+
+  // Try loading the game in iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = g.url;
+  iframe.setAttribute('allowfullscreen', ''); // best practice
+  iframe.style.width = '100%';
+  iframe.style.height = '520px';
+  let loaded = false;
+
+  // If iframe loading fails due to X-Frame-Options, fallback
+  iframe.onerror = function() {
+    if (!loaded) {
+      window.open(g.url, '_blank');
+      closeModal();
+    }
+  };
+  // Give user a chance, if frame loads in < 3s, mark as loaded
+  iframe.onload = function() { loaded = true; };
+
+  // Some browsers (especially Chrome) might not trigger onerror for frame blocking.
+  // So also use a timeout fallback:
+  setTimeout(function() {
+    if (!loaded) {
+      window.open(g.url, '_blank');
+      closeModal();
+    }
+  }, 3000);
+
+  wrap.appendChild(iframe);
 }
 
 function closeModal() {
@@ -569,6 +603,7 @@ function filterCat(cat, el) {
   renderGrid('trendingGrid', tFiltered);
 }
 
+// -- SEARCH --
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
 const srGrid = document.getElementById('srGrid');
